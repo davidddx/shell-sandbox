@@ -38,8 +38,6 @@ services:
     container_name: shell-nginx-server
     networks:
       - terminal-network
-    ports:
-      - "80:80"
     depends_on:
       - server
   sandbox:
