@@ -3,6 +3,8 @@ const http = require('http');
 const WebSocket = require('ws');
 const pty = require('node-pty');
 const path = require('path');
+const crypto = require('crypto');
+const { execFile } = require('child_process');
 
 const app = express();
 const server = http.createServer(app);
@@ -17,6 +19,7 @@ let activeSessions = 0;
 app.use(express.static(path.join(__dirname, 'public')));
 
 wss.on('connection', (ws) => {
+	const name = `sandbox-${crypto.randomUUID()}`;
 	// 1. Enforce Server Capacity Cap
 	if (activeSessions >= MAX_SESSIONS) {
 		ws.send("\r\n\x1b[31mServer is at capacity. Please try again later.\x1b[0m\r\n");
@@ -38,7 +41,8 @@ wss.on('connection', (ws) => {
 		'--memory', '64m',
 		'--cpus', '.25',
 		'--pids-limit', '15',
-		'terminal-sandbox' // Must match your built Docker image tag
+		'--name', name,
+		'terminal-sandbox', // Must match your built Docker image tag
 	], {
 		name: 'xterm-color',
 		cols: 80,
@@ -94,6 +98,8 @@ wss.on('connection', (ws) => {
 		}
 		try {
 			shell.kill(); // Kills the process, triggering Docker --rm to delete container instantly
+			execFile('docker', ['kill', name], () => {});
+			try { ws.close(); } catch (e) {}
 		} catch (e) {}
 
 		activeSessions--;
