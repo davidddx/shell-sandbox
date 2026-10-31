@@ -5,6 +5,8 @@ services:
     build: ./terminal-server
     container_name: terminal-server
     restart: unless-stopped
+    networks:
+      - terminal-network
     # Bound to localhost only: put nginx/Caddy (with TLS) in front of this.
     ports:
       - "127.0.0.1:3000:3000"
@@ -33,6 +35,9 @@ services:
  nginx:
     build: ./nginx
     restart: unless-stopped
+    container_nme: shell-nginx-server; 
+    networks:
+      - terminal-network
     ports:
       - "80:80"
     depends_on:
@@ -42,3 +47,5 @@ services:
       context: .
       dockerfile: sandbox/Dockerfile
     image: terminal-sandbox
+networks:
+  terminal-network:
