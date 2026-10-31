@@ -1,0 +1,47 @@
+services:
+  # The web/WebSocket server. It talks to the HOST's Docker daemon through the
+  # mounted socket, so each user's sandbox runs as a sibling container on the host.
+  server:
+    build: ./terminal-server
+    container_name: terminal-server
+    #restart: unless-stopped
+    networks:
+      - terminal-network
+    # Bound to localhost only: put nginx/Caddy (with TLS) in front of this.
+   environment:
+      # Must match the origin your users load the site from.
+      ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-http://localhost:3000}"
+      # Set to 1 only when running behind a reverse proxy.
+      TRUST_PROXY: "${TRUST_PROXY:-0}"
+    volumes:
+      # Root-equivalent access to the host. Keep this service minimal.
+      - /var/run/docker.sock:/var/run/docker.sock
+    # Lets the non-root "node" user use the socket. Find your GID with:
+    #   stat -c %g /var/run/docker.sock
+    group_add:
+      - "${DOCKER_GID:-999}"
+    user: node
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    pids_limit: 200
+  nginx:
+    build: ./nginx
+    #restart: unless-stopped
+    container_name: shell-nginx-server
+    networks:
+      - terminal-network
+    depends_on:
+      - server
+  sandbox:
+    build: 
+      context: .
+      dockerfile: sandbox/Dockerfile
+    image: terminal-sandbox
+networks:
+  terminal-network:
