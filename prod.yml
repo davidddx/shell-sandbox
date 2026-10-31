@@ -8,7 +8,7 @@ services:
     networks:
       - terminal-network
     # Bound to localhost only: put nginx/Caddy (with TLS) in front of this.
-   environment:
+    environment:
       # Must match the origin your users load the site from.
       ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-http://localhost:3000}"
       # Set to 1 only when running behind a reverse proxy.
