@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xterm.js + node-pty Terminal</title>
+    <!-- Include xterm.js CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
+    <style>
+        body {
+            background-color: #0d1117;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #terminal {
+            width: 700px;
+            height: 400px;
+            padding: 10px;
+            background: #000;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="terminal"></div>
+
+    <!-- Include xterm.js JS -->
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+    <script>
+        // 1. Initialize Terminal
+        const term = new Terminal({
+            cursorBlink: true,
+            theme: {
+                background: '#000000',
+                foreground: '#c9d1d9',
+                cursor: '#58a6ff'
+            }
+        });
+
+        // Open terminal in the HTML div
+        term.open(document.getElementById('terminal'));
+
+        // 2. Connect to the backend via WebSocket
+        const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const socket = new WebSocket(`${protocol}//${location.host}`);
+
+        // 3. Pipe incoming server PTY data -> xterm.js screen
+        socket.onmessage = (event) => {
+            term.write(event.data);
+        };
+
+        // 4. Pipe user keystrokes -> backend PTY stdin via WebSocket
+        term.onData((data) => {
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(data);
+            }
+        });
+    </script>
+</body>
+</html>
